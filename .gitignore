@@ -1,0 +1,28 @@
+# Apple
+.DS_Store
+
+# Python
+*.py[cod]
+*$py.class
+
+# Pycharm
+__pycache__/
+.idea/
+
+# VS Code
+.vscode/
+
+# Django:
+db.sqlite3
+db.sqlite3-journal
+
+# Celery
+celerybeat-schedule.*
+celerybeat.pid
+
+# Project
+build/
+logs/
+test_script/
+.env.dev
+
