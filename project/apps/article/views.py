@@ -283,7 +283,10 @@ class GetMoreDataView(APIView):
     @cache_response(timeout=settings.CACHE_TIME_GETMOREDATA, key_func='cache_key')
     def get(self, request, slug):
         type = request.query_params.get('type', '')
-        uid_list = article_models.CategoryGroupRank.objects.filter(slug=slug).first().rank
+        try:
+            uid_list = article_models.CategoryGroupRank.objects.filter(slug=slug).first().rank
+        except Exception as e:
+            uid_list = []
         article_list = article_models.Article.objects.exclude(uid__in=uid_list).order_by(
             'rank')
 

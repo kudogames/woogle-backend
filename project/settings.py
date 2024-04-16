@@ -22,7 +22,7 @@ env = environ.Env()
 env_file = '.env.%s' % APP_ENV
 env.read_env(env_file=os.path.join(ROOT_DIR, env_file))
 
-SECRET_KEY = 'bhv6!c4#u%r#&=ls&$gfic@7_yi5(eeql=6)ttdj!ai2lg4l%('
+SECRET_KEY = 'a7u&lqksz)cdrv@-)vobsf*arb1ps+_4+%n3r+t$lnn#sx5brj'
 DEBUG = env('DEBUG', default=False)
 ROOT_URLCONF = 'project.urls'
 
