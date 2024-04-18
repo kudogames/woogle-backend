@@ -73,7 +73,8 @@ class ArticleMiddleSerializer(serializers.ModelSerializer):
     category = serializers.SerializerMethodField(read_only=True)
 
     def get_cover_img(self, obj):
-        return imgproxy.get_img_url(obj.cover_img)
+        options = self.context.get('options', ImgProxyOptions.COVER_IMG)
+        return imgproxy.get_img_url(obj.cover_img, options=options)
 
     def get_category(self, obj):
         category_obj = obj.categories.first()
