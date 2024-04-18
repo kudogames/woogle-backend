@@ -80,6 +80,26 @@ class ArticleDataViewSet(ModelViewSet):
 
         return APIResponse(data=data, status=status.HTTP_200_OK, msg='success')
 
+    @action(methods=['post'], detail=False)
+    def update_category_rank(self, request):
+        data = request.data.get('data')
+
+        category_name = data.get('category_name', '')
+        rank = data.get('rank', [])
+
+        category_obj = article_models.Category.objects.filter(name=category_name).first()
+        if not category_obj:
+            return APIResponse(status=status.HTTP_400_BAD_REQUEST, msg='category_name not exist')
+
+        article_models.CategoryGroupRank.objects.update_or_create(
+            slug=category_name,
+            defaults={
+                'rank': rank
+            }
+        )
+
+        return APIResponse(status=status.HTTP_200_OK, msg='success')
+
 
 class SitemapPageView(APIView):
     def cache_key(self, view_instance, view_method, request, args, kwargs):
