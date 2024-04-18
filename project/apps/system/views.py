@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 
 from rest_framework import status
+from django.utils.text import slugify
 from django.utils.decorators import method_decorator
 from rest_framework.decorators import action, APIView
 from django.conf import settings
@@ -87,8 +88,9 @@ class ArticleDataViewSet(ModelViewSet):
         category_name = data.get('category_name', '')
         rank = data.get('rank', [])
 
+        slug=slugify(category_name)
         article_models.CategoryGroupRank.objects.update_or_create(
-            slug=category_name,
+            slug=slug,
             defaults={
                 'rank': rank
             }
