@@ -263,7 +263,7 @@ class RainPageView(APIView):
 
     @cache_response(timeout=settings.CACHE_TIME_RAIN, key_func='cache_key')
     def get(self, request):
-        rain_uid_list = article_models.CategoryGroupRank.objects.filter(slug='tree').first().rank
+        rain_uid_list = article_models.CategoryGroupRank.objects.filter(slug='rain').first().rank
         rain_article_list = article_models.Article.objects.filter(uid__in=rain_uid_list)
         rain_article_data = article_serializers.ArticleMiddleSerializer(rain_article_list, many=True, context={
             'options': ImgProxyOptions.M_COVER_IMG}).data
