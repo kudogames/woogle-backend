@@ -87,10 +87,6 @@ class ArticleDataViewSet(ModelViewSet):
         category_name = data.get('category_name', '')
         rank = data.get('rank', [])
 
-        category_obj = article_models.Category.objects.filter(name=category_name).first()
-        if not category_obj:
-            return APIResponse(status=status.HTTP_400_BAD_REQUEST, msg='category_name not exist')
-
         article_models.CategoryGroupRank.objects.update_or_create(
             slug=category_name,
             defaults={
