@@ -17,7 +17,7 @@ class ImgProxyOptions(enum.Enum):
     COVER_IMG = '/rs:fit:350:350/q:80'
     L_COVER_IMG = '/rs:fit:876:876/q:80'
     M_COVER_IMG = '/rs:fit:520:520/q:80'
-    s_COVER_IMG = '/rs:fit:136:136/q:80'
+    S_COVER_IMG = '/rs:fill:140:140/q:80'
 
 
 class ImgProxy:

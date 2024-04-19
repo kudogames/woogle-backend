@@ -110,7 +110,7 @@ class QPageView(APIView):
             return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
 
         search_article_list_data = article_serializers.ArticleMiddleSerializer(data_page, many=True, context={
-            'options': ImgProxyOptions.s_COVER_IMG}).data
+            'options': ImgProxyOptions.S_COVER_IMG}).data
         if page < 2:
             tagList = [
                 ['Donate', 'Charity', 'Non-Profit', 'Tax Deduction', 'Car Donation', 'Motorcycle', 'Boat', 'Recycle'],
