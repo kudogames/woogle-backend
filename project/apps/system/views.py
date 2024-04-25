@@ -88,7 +88,7 @@ class ArticleDataViewSet(ModelViewSet):
         category_name = data.get('category_name', '')
         rank = data.get('rank', [])
 
-        slug=slugify(category_name)
+        slug = slugify(category_name)
         article_models.CategoryGroupRank.objects.update_or_create(
             slug=slug,
             defaults={

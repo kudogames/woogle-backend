@@ -26,6 +26,24 @@ class TagSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 
+class StyleIdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = article_models.SearchAdInfo
+        fields = ('terms_style_id', 'results_style_id', 'channel_id')
+
+
+class SearchAdInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = article_models.SearchAdInfo
+        fields = ('uid', 'terms', 'terms_style_id', 'results_style_id', 'channel_id')
+
+
+class SearchArticleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = article_models.Article
+        fields = ("uid", "title", "description", "content")
+
+
 class ArticleSerializer(serializers.ModelSerializer):
     cover_img = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField(read_only=True)
