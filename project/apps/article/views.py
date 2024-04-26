@@ -187,8 +187,6 @@ class GetMoreDataView(APIView):
 
     @cache_response(timeout=settings.CACHE_TIME_GETMOREDATA, key_func='cache_key')
     def get(self, request, slug):
-        page =5
-        size = 7
         type = request.query_params.get('type', '')
         try:
             uid_list = article_models.CategoryGroupRank.objects.filter(slug=slug).first().rank

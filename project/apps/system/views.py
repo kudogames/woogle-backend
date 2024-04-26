@@ -115,72 +115,31 @@ class SitemapPageView(APIView):
                 'lastmod': datetime.now()
             },
             {
-                'url': '/love',
-                'changefreq': 'weekly',
-                'priority': 1,
-                'lastmod': datetime.now()
-            }, {
                 'url': '/q',
                 'changefreq': 'weekly',
                 'priority': 1,
                 'lastmod': datetime.now()
             },
             {
-                'url': '/c/health',
+                'url': '/c/vehicle-donation',
                 'changefreq': 'weekly',
                 'priority': 0.9,
                 'lastmod': datetime.now()
             },
             {
-                'url': '/c/career',
+                'url': '/c/vehicle-plans',
                 'changefreq': 'weekly',
                 'priority': 0.9,
                 'lastmod': datetime.now()
             },
             {
-                'url': '/c/education',
+                'url': '/c/motor-vehicles',
                 'changefreq': 'weekly',
                 'priority': 0.9,
                 'lastmod': datetime.now()
             },
             {
-                'url': '/c/housing',
-                'changefreq': 'weekly',
-                'priority': 0.9,
-                'lastmod': datetime.now()
-            },
-            {
-                'url': '/c/lifestyle',
-                'changefreq': 'weekly',
-                'priority': 0.9,
-                'lastmod': datetime.now()
-            },
-            {
-                'url': '/c/fashion',
-                'changefreq': 'weekly',
-                'priority': 0.9,
-                'lastmod': datetime.now()
-            },
-            {
-                'url': '/c/law',
-                'changefreq': 'weekly',
-                'priority': 0.9,
-                'lastmod': datetime.now()
-            },
-            {
-                'url': '/c/game',
-                'changefreq': 'weekly',
-                'priority': 0.9,
-                'lastmod': datetime.now()
-            },
-            {
-                'url': '/c/tv-show',
-                'changefreq': 'weekly',
-                'priority': 0.9,
-                'lastmod': datetime.now()
-            },
-            {
-                'url': '/c/car',
+                'url': '/c/repair',
                 'changefreq': 'weekly',
                 'priority': 0.9,
                 'lastmod': datetime.now()
@@ -191,6 +150,6 @@ class SitemapPageView(APIView):
         article_sitemap_data = article_serializers.ArticleSitemapSerializer(
             instance=article_objs, many=True, context={'route': 'article'}).data
 
-        sitemap = sitemap + article_sitemap_data + article_sitemap_data
+        sitemap = sitemap + article_sitemap_data
 
         return Response(sitemap)
