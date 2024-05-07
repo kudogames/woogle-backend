@@ -41,7 +41,7 @@ class SearchAdInfoSerializer(serializers.ModelSerializer):
 class SearchArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = article_models.Article
-        fields = ("uid", "title", "description", "content")
+        fields = ("uid", "title", "description", "content", "cover_img")
 
 
 class ArticleSerializer(serializers.ModelSerializer):
