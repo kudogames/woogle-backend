@@ -104,10 +104,6 @@ class QPageView(APIView):
         search_article_list_data = article_serializers.ArticleMiddleSerializer(data_page, many=True, context={
             'options': ImgProxyOptions.S_COVER_IMG}).data
         if page < 2:
-            sai_id = request.query_params.get('sai_id')
-            style_id_info = article_models.SearchAdInfo.objects.filter(uid=sai_id).first()
-            style_id_info_data = article_serializers.StyleIdSerializer(style_id_info).data
-
             tagList = [
                 ['Donate', 'Charity', 'Non-Profit', 'Tax Deduction', 'Car Donation', 'Motorcycle', 'Boat', 'Recycle'],
                 ['Blueprint', 'Design', 'Model', 'Schema', 'Prototype', 'Concept', 'Production', 'Innovation'],
@@ -116,7 +112,7 @@ class QPageView(APIView):
             ]
             tag = [random.sample(tags, min(6, len(tags))) for tags in tagList]
             data = {
-                'style_id_info': style_id_info_data,
+
                 'tagList': tag,
                 'search_article_list': search_article_list_data,
             }

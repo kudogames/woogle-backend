@@ -65,8 +65,6 @@ class SearchAdInfo(TimeBaseModel):
     # sai_id
     uid = models.CharField(max_length=10, primary_key=True, db_index=True)
     terms = models.CharField(max_length=1000, default='')
-    terms_style_id = models.CharField(max_length=50, default='')
-    results_style_id = models.CharField(max_length=50, default='')
     channel_id = models.CharField(max_length=50, default='')
 
     class Meta:
