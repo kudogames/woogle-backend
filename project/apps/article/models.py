@@ -10,6 +10,7 @@ class Article(TimeBaseModel):
     uid = models.CharField(max_length=10, primary_key=True, db_index=True)
     title = models.CharField(max_length=250, default='')
     slug = models.SlugField(max_length=250, null=True, unique=True)
+    referrer_ad_creative = models.CharField(max_length=250, default='')
     description = models.TextField(max_length=5000, default='')
     content = models.TextField(max_length=50000, default='')
     cover_img = models.CharField(max_length=200, default='')
