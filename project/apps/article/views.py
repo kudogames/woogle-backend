@@ -12,6 +12,7 @@ from utils.pagination import APIPageNumberPagination
 from article import models as article_models
 from article import serializers as article_serializers
 
+
 def get_specify_sequence(uid_list_str):
     """
     首页随机文章，从15个中随机取
@@ -26,6 +27,15 @@ def get_specify_sequence(uid_list_str):
     return article_list_data
 
 
+class UseAPIPageNumberPagination(APIPageNumberPagination):
+    def get_pagination_data(self, data_list, request, serializer):
+        data_page = self.paginate_queryset(data_list, request)
+        data_list_data = serializer(data_page, many=True).data
+        if data_page is None:
+            return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
+        return data_list_data
+
+
 class IndexPageView(APIView):
     def cache_key(self, view_instance, view_method, request, args, kwargs):
         return f'backend:article:index'
@@ -38,9 +48,11 @@ class IndexPageView(APIView):
             uid_list = article_models.CategoryGroupRank.objects.filter(slug='index').first().rank
         except Exception as e:
             uid_list = []
-        all_article_list = article_models.Article.objects.exclude(uid__in=uid_list).order_by(
-            'rank')[:24]
-        all_article_list_data = article_serializers.ArticleSimpleSerializer(all_article_list, many=True).data
+        all_article_list = article_models.Article.objects.exclude(uid__in=uid_list).order_by('uid')
+
+        data_page = UseAPIPageNumberPagination()
+        all_article_list_data = data_page.get_pagination_data(all_article_list, request,
+                                                              article_serializers.ArticleSimpleSerializer)
 
         data = {
             'trending_article_list': trending_article_list_data,
@@ -48,7 +60,6 @@ class IndexPageView(APIView):
         }
 
         return APIResponse(data=data, status=drf_status.HTTP_200_OK)
-
 
 
 class ArticlePageView(APIView):
@@ -122,7 +133,6 @@ class QPageView(APIView):
         return search_articles_pg.get_paginated_response(data)
 
 
-
 class SearchAdPageView(APIView):
 
     def calculate_cache_key(self, view_instance, view_method, request, args, kwargs):
@@ -159,10 +169,15 @@ class CategoryPageView(APIView):
         category_rank_obj = article_models.CategoryGroupRank.objects.filter(slug=slug)
         if category_rank_obj:
             uid_list = category_rank_obj.first().rank
-            category_article_list = article_models.Article.objects.filter(uid__in=uid_list).order_by('rank')
+            if uid_list:
+                category_article_list = article_models.Article.objects.filter(uid__in=uid_list).order_by('uid')
+            else:
+                category_article_list = article_models.Article.objects.filter(categories__slug=slug).order_by('uid')
         else:
-            category_article_list = []
-        category_article_list_data = article_serializers.ArticleMiddleSerializer(category_article_list, many=True).data
+            category_article_list = article_models.Article.objects.filter(categories__slug=slug).order_by('uid')
+        data_page = UseAPIPageNumberPagination()
+        category_article_list_data = data_page.get_pagination_data(category_article_list, request,
+                                                                   article_serializers.ArticleMiddleSerializer)
 
         latest_posts_list_data = get_specify_sequence('index')[:10]
 
@@ -183,26 +198,26 @@ class GetMoreDataView(APIView):
 
     @cache_response(timeout=settings.CACHE_TIME_GETMOREDATA, key_func='cache_key')
     def get(self, request, slug):
+
         type = request.query_params.get('type', '')
         try:
             uid_list = article_models.CategoryGroupRank.objects.filter(slug=slug).first().rank
         except Exception as e:
             uid_list = []
         article_list = article_models.Article.objects.exclude(uid__in=uid_list).order_by(
-            'rank')
+            'uid')
 
         if type == 'category':
             article_list = article_list.filter(categories__slug=slug)
-        # size = size, page = page
-        article_pg = APIPageNumberPagination()
-        data_page = article_pg.paginate_queryset(article_list, request)
 
-        if data_page is None:
-            return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
+        data_page = UseAPIPageNumberPagination()
+
         if type == 'category':
-            article_list_data = article_serializers.ArticleMiddleSerializer(data_page, many=True).data
+            article_list_data = data_page.get_pagination_data(article_list, request,
+                                                              article_serializers.ArticleMiddleSerializer)
         else:
-            article_list_data = article_serializers.ArticleSimpleSerializer(data_page, many=True).data
+            article_list_data = data_page.get_pagination_data(article_list, request,
+                                                              article_serializers.ArticleSimpleSerializer)
 
         data = {'new_data_list': article_list_data}
-        return article_pg.get_paginated_response(data)
+        return data_page.get_paginated_response(data)

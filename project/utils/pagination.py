@@ -13,7 +13,7 @@ class APIPageNumberPagination(PageNumberPagination):
     分页 Page Number Paginator
     """
     # 默认每页大小
-    page_size = 20
+    page_size = 24
     # 每页最大数量
     max_page_size = 200
     # 自定义每页大小 字段
