@@ -8,6 +8,7 @@ urlpatterns = [
     path('page/c/<str:slug>', views.CategoryPageView.as_view()),
     path('page/article/<str:uid>', views.ArticlePageView.as_view()),
     path('page/get-data/<str:slug>', views.GetMoreDataView.as_view()),
-    path('page/Content/<str:uid>/<str:slug>', views.SearchAdPageView.as_view()),
+    path('page/Content/<str:uid>/<str:slug>', views.ContentPageView.as_view()),
+    path('page/Discussion/<str:uid>/<str:slug>', views.DiscussionPageView.as_view()),
 
 ]

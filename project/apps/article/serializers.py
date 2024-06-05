@@ -26,7 +26,6 @@ class TagSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 
-
 class SearchAdInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = article_models.SearchAdInfo
@@ -36,7 +35,7 @@ class SearchAdInfoSerializer(serializers.ModelSerializer):
 class SearchArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = article_models.Article
-        fields = ("uid", "title", "description", "content", "cover_img","referrer_ad_creative")
+        fields = ("uid", "title", "description", "content", "cover_img", "referrer_ad_creative")
 
 
 class ArticleSerializer(serializers.ModelSerializer):
@@ -60,7 +59,8 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = article_models.Article
-        fields = ("uid", "title", "description", 'tags', "category", "content", "cover_img", "rank","referrer_ad_creative")
+        fields = (
+        "uid", "title", "description", 'tags', "category", "content", "cover_img", "rank", "referrer_ad_creative")
 
 
 class ArticleSimpleSerializer(serializers.ModelSerializer):
@@ -78,7 +78,7 @@ class ArticleSimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = article_models.Article
-        fields = ("uid", "title", "category", "cover_img", "rank")
+        fields = ("uid", "slug", "title", "category", "cover_img", "rank")
 
 
 class ArticleMiddleSerializer(serializers.ModelSerializer):
@@ -96,6 +96,12 @@ class ArticleMiddleSerializer(serializers.ModelSerializer):
     class Meta:
         model = article_models.Article
         fields = ("uid", "title", "description", "category", "cover_img", "rank")
+
+
+class DiscussionSerializer(serializers.Serializer):
+    uid = serializers.CharField(read_only=True)
+
+    article = ArticleSimpleSerializer()
 
 
 class ArticleSitemapSerializer(serializers.ModelSerializer):
