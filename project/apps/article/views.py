@@ -54,14 +54,10 @@ class IndexPageView(APIView):
         editors_article_list = article_models.Article.objects.order_by('?')[:6]
         editors_article_list_data = article_serializers.IndexArticleSerializer(editors_article_list, many=True).data
 
-        all_article_list = article_models.Article.objects.order_by('uid')
-
-        all_article_list_data = article_serializers.ArticleSimpleSerializer(all_article_list, many=True).data
-
         data = {
             'swiper_article_list': swiper_article_list_data,
             'trending_article_list': trending_article_list_data,
-            'all_article_list': all_article_list_data,
+
             'latest_article_list': latest_article_list_data,
             'editors_article_list': editors_article_list_data
         }
