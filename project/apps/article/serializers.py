@@ -63,6 +63,27 @@ class ArticleSerializer(serializers.ModelSerializer):
         "uid", "title", "description", 'tags', "category", "content", "cover_img", "rank", "referrer_ad_creative")
 
 
+
+class IndexArticleSerializer(serializers.ModelSerializer):
+    cover_img = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField(read_only=True)
+
+    def get_cover_img(self, obj):
+        options = self.context.get('options', ImgProxyOptions.M_COVER_IMG)
+        return imgproxy.get_img_url(obj.cover_img, options=options)
+
+    def get_category(self, obj):
+        category_obj = obj.categories.first()
+        return CategorySerializer(category_obj).data
+
+    class Meta:
+        model = article_models.Article
+        fields = ("uid", "title", "description","update_time", "category", "cover_img", "rank")
+
+
+
+
+
 class ArticleSimpleSerializer(serializers.ModelSerializer):
     cover_img = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField(read_only=True)

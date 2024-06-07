@@ -42,21 +42,28 @@ class IndexPageView(APIView):
 
     @cache_response(timeout=settings.CACHE_TIME_INDEX, key_func='cache_key')
     def get(self, request):
-        trending_article_list_data = get_specify_sequence('index')[0:6]
+        swiper_article_list = article_models.Article.objects.order_by('?')[:4]
+        swiper_article_list_data = article_serializers.IndexArticleSerializer(swiper_article_list, many=True).data
 
-        try:
-            uid_list = article_models.CategoryGroupRank.objects.filter(slug='index').first().rank
-        except Exception as e:
-            uid_list = []
-        all_article_list = article_models.Article.objects.exclude(uid__in=uid_list).order_by('uid')
+        trending_article_list = article_models.Article.objects.order_by('?')[:6]
+        trending_article_list_data = article_serializers.IndexArticleSerializer(trending_article_list, many=True).data
 
-        data_page = UseAPIPageNumberPagination()
-        all_article_list_data = data_page.get_pagination_data(all_article_list, request,
-                                                              article_serializers.ArticleSimpleSerializer)
+        latest_article_list = article_models.Article.objects.order_by('?')[:4]
+        latest_article_list_data = article_serializers.IndexArticleSerializer(latest_article_list, many=True).data
+
+        editors_article_list = article_models.Article.objects.order_by('?')[:6]
+        editors_article_list_data = article_serializers.IndexArticleSerializer(editors_article_list, many=True).data
+
+        all_article_list = article_models.Article.objects.order_by('uid')
+
+        all_article_list_data = article_serializers.ArticleSimpleSerializer(all_article_list, many=True).data
 
         data = {
+            'swiper_article_list': swiper_article_list_data,
             'trending_article_list': trending_article_list_data,
-            'all_article_list': all_article_list_data
+            'all_article_list': all_article_list_data,
+            'latest_article_list': latest_article_list_data,
+            'editors_article_list': editors_article_list_data
         }
 
         return APIResponse(data=data, status=drf_status.HTTP_200_OK)
