@@ -282,8 +282,10 @@ class DiscussionPageView(APIView):
                           'MQHBzlNV': 'how-to-buy-a-reliable-used-car-on-a-budget',
                           'NoTwxhJR': 'killer-new-palisade-suv-attracts-every-custome',
                           'b0TvVR9E': 'unsold-cars-for-seniors-are-almost-being-given-away-2'}
-
-        del ad_article_map[uid]
+        try:
+            del ad_article_map[uid]
+        except Exception as e:
+            pass
 
         random_keys = random.sample(list(ad_article_map), 5)
         # 使用这些键来获取对应的值，得到随机的键值对
