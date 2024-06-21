@@ -1,3 +1,4 @@
+import random
 from rest_framework import serializers
 from utils.imgproxy import imgproxy, ImgProxyOptions
 from article import models as article_models
@@ -81,6 +82,25 @@ class IndexArticleSerializer(serializers.ModelSerializer):
         fields = ("uid", "title", "description","update_time", "category", "cover_img", "rank")
 
 
+class CategoryArticleSerializer(serializers.ModelSerializer):
+    cover_img = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField(read_only=True)
+    read_time = serializers.SerializerMethodField()
+
+    def get_read_time(self, obj):
+        return random.randint(3, 8)
+
+    def get_cover_img(self, obj):
+        options = self.context.get('options', ImgProxyOptions.M_COVER_IMG)
+        return imgproxy.get_img_url(obj.cover_img, options=options)
+
+    def get_category(self, obj):
+        category_obj = obj.categories.first()
+        return CategorySerializer(category_obj).data
+
+    class Meta:
+        model = article_models.Article
+        fields = ("uid", "title", "description","update_time", "category", "cover_img", "rank",'read_time')
 
 
 

@@ -326,24 +326,23 @@ class CategoryPageView(APIView):
         if not current_category:
             return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
 
-        category_rank_obj = article_models.CategoryGroupRank.objects.filter(slug=slug)
-        if category_rank_obj:
-            uid_list = category_rank_obj.first().rank
-            if uid_list:
-                category_article_list = article_models.Article.objects.filter(uid__in=uid_list).order_by('uid')
-            else:
-                category_article_list = article_models.Article.objects.filter(categories__slug=slug).order_by('uid')
-        else:
-            category_article_list = article_models.Article.objects.filter(categories__slug=slug).order_by('uid')
-        data_page = UseAPIPageNumberPagination()
-        category_article_list_data = data_page.get_pagination_data(category_article_list, request,
-                                                                   article_serializers.ArticleMiddleSerializer)
+        top_article_obj = article_models.Article.objects.filter(categories__slug=slug).first()
+        top_article_data = article_serializers.CategoryArticleSerializer(top_article_obj, context={
+            'options': ImgProxyOptions.M_COVER_IMG}).data
 
-        latest_posts_list_data = get_specify_sequence('index')[:10]
+        trending_article_list = article_models.Article.objects.filter(categories__slug=slug).order_by('?')[:6]
+        trending_article_list_data = article_serializers.CategoryArticleSerializer(trending_article_list, many=True).data
+
+        trending_article_uid_list = [article.uid for article in trending_article_list]
+
+        recent_article_list = article_models.Article.objects.exclude(uid=top_article_obj.uid).exclude(
+            uid__in=trending_article_uid_list).filter(categories__slug=slug).order_by('-create_time')
+        recent_article_list_data = article_serializers.CategoryArticleSerializer(recent_article_list, many=True).data
 
         data = {
-            'category_article_list': category_article_list_data,
-            'latest_posts_list': latest_posts_list_data
+            'top_article': top_article_data,
+            'trending_article_list': trending_article_list_data,
+            'recent_article_list': recent_article_list_data
         }
 
         return APIResponse(data=data, status=drf_status.HTTP_200_OK)
