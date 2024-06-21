@@ -101,6 +101,7 @@ class QPageView(APIView):
     def get(self, request):
         page = int(request.query_params.get('page', 1))
         q = request.query_params.get('q', None)
+
         exact_articles = article_models.Article.objects.annotate(
             order=Case(
                 When(title__icontains=q, then=0),
@@ -118,6 +119,16 @@ class QPageView(APIView):
         search_article_list_data = article_serializers.ArticleMiddleSerializer(data_page, many=True, context={
             'options': ImgProxyOptions.S_COVER_IMG}).data
         if page < 2:
+
+            sai_id = request.query_params.get('sai_id', None)
+            search_ad_info = article_models.SearchAdInfo.objects.filter(uid=sai_id).first()
+
+            if search_ad_info:
+                terms = [term.lower().strip() for term in search_ad_info.terms.split(',')]
+                is_own = q.lower().strip() in terms
+            else:
+                is_own = False
+
             tagList = [
                 ['Donate', 'Charity', 'Non-Profit', 'Tax Deduction', 'Car Donation', 'Motorcycle', 'Boat', 'Recycle'],
                 ['Blueprint', 'Design', 'Model', 'Schema', 'Prototype', 'Concept', 'Production', 'Innovation'],
@@ -126,7 +137,7 @@ class QPageView(APIView):
             ]
             tag = [random.sample(tags, min(6, len(tags))) for tags in tagList]
             data = {
-
+                'is_own': is_own,
                 'tagList': tag,
                 'search_article_list': search_article_list_data,
             }
@@ -331,7 +342,8 @@ class CategoryPageView(APIView):
             'options': ImgProxyOptions.M_COVER_IMG}).data
 
         trending_article_list = article_models.Article.objects.filter(categories__slug=slug).order_by('?')[:6]
-        trending_article_list_data = article_serializers.CategoryArticleSerializer(trending_article_list, many=True).data
+        trending_article_list_data = article_serializers.CategoryArticleSerializer(trending_article_list,
+                                                                                   many=True).data
 
         trending_article_uid_list = [article.uid for article in trending_article_list]
 
