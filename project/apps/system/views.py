@@ -1,13 +1,14 @@
 import json
 from datetime import datetime
-
+import os
+import logging
 from rest_framework import status
 from django.utils.text import slugify
 from django.utils.decorators import method_decorator
 from rest_framework.decorators import action, APIView
 from django.conf import settings
 from rest_framework_extensions.cache.decorators import cache_response
-
+from settings import LOG_DIR
 from rest_framework.response import Response
 from utils.response import APIResponse
 from utils.viewsets import ModelViewSet
@@ -97,6 +98,39 @@ class ArticleDataViewSet(ModelViewSet):
         )
 
         return APIResponse(status=status.HTTP_200_OK, msg='success')
+
+
+@method_decorator(system_decorators.api_auth, name='dispatch')
+class SearchAdInfoDataViewSet(ModelViewSet):
+    queryset = article_models.SearchAdInfo.objects.all()
+    serializer_class = system_serializers.ArticleDataSearchAdInfoSerializer
+
+    @action(methods=['post'], detail=False)
+    def batch_add(self, request):
+        data = request.data
+        create_success_uid_list = []
+        create_error_uid_list = []
+        for ad_info in data:
+            try:
+                article_models.SearchAdInfo.objects.create(**ad_info)
+                create_success_uid_list.append(ad_info.get('uid'))
+            except Exception as e:
+                create_error_uid_list.append(ad_info.get('uid'))
+        data = {
+            'create_success_uid_list': create_success_uid_list,
+            'create_error_uid_list': create_error_uid_list,
+        }
+
+        return APIResponse(data=data, status=status.HTTP_200_OK, msg='success')
+
+
+class GetWoogleSheetDataView(APIView):
+
+    def post(self, request):
+        data = request.data
+        article_list = article_models.Article.objects.filter(uid__in=data)
+        article_list_data = system_serializers.WoogleSheetDataSerializer(article_list, many=True).data
+        return APIResponse(data=article_list_data, status=status.HTTP_200_OK)
 
 
 class SitemapPageView(APIView):
