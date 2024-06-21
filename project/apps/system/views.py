@@ -45,7 +45,13 @@ class ArticleDataViewSet(ModelViewSet):
                     uid=article_info.get('uid'),
                     defaults={
                         'update_time': datetime.now(),
-                        **article_info
+                        'title': article_info.get('title', ''),
+                        'slug':article_info.get('slug', ''),
+                        'description': article_info.get('description', ''),
+                        'content': article_info.get('content', ''),
+                        'cover_img': article_info.get('cover_img', ''),
+                        'referrer_ad_creative': article_info.get('referrer_ad_creative', ''),
+
                     }
                 )[0]
 
