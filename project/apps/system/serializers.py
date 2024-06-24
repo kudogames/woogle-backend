@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from datetime import datetime
 
-from  utils.shortcuts import short_uuid
+from utils.shortcuts import short_uuid
 
 from article import models as article_models
 
@@ -15,7 +15,7 @@ class ArticleDataSearchAdInfoSerializer(serializers.ModelSerializer):
 class WoogleSheetDataSerializer(serializers.ModelSerializer):
     uuid = serializers.SerializerMethodField()
 
-    def get_uuid(self,obj):
+    def get_uuid(self, obj):
         return short_uuid()
 
     class Meta:
@@ -36,8 +36,8 @@ class ArticleDataCategorySerializer(serializers.ModelSerializer):
 
 
 class ArticleDataSerializer(serializers.ModelSerializer):
-    tags = ArticleDataTagSerializer(many=True)
-    categories = ArticleDataCategorySerializer(many=True)
+    tags = ArticleDataTagSerializer(many=True, read_only=True)
+    categories = ArticleDataCategorySerializer(many=True, read_only=True)
 
     tag_list = serializers.ListField(write_only=True, required=True)
     category_list = serializers.ListField(write_only=True, required=True)
@@ -46,6 +46,8 @@ class ArticleDataSerializer(serializers.ModelSerializer):
 
         instance.update_time = validated_data.get(datetime.now(), instance.update_time)
         instance.title = validated_data.get('title', instance.title)
+        instance.slug = validated_data.get('slug', instance.slug)
+        instance.referrer_ad_creative = validated_data.get('referrer_ad_creative', instance.referrer_ad_creative)
         instance.description = validated_data.get('description', instance.description)
         instance.content = validated_data.get('content', instance.content)
         instance.cover_img = validated_data.get('cover_img', instance.cover_img)
