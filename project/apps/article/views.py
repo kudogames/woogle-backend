@@ -75,16 +75,15 @@ class ArticlePageView(APIView):
         if not article_obj:
             return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
 
-        current_article_data = article_serializers.ArticleSerializer(article_obj, context={
-            'options': ImgProxyOptions.L_COVER_IMG}).data
+        current_article_data = article_serializers.ArticleDetailSerializer(article_obj).data
 
-        related_article_objs = article_models.Article.objects.exclude(uid=uid).order_by('?')[:6]
-        related_article_data = article_serializers.ArticleSimpleSerializer(related_article_objs, many=True, context={
-            'options': ImgProxyOptions.M_COVER_IMG}).data
+        popular_article_list = article_models.Article.objects.exclude(uid=uid).order_by('?')[:10]
+        popular_article_list_data = article_serializers.ArticleSimpleSerializer(popular_article_list, many=True, context={
+            'options': ImgProxyOptions.S_COVER_IMG}).data
 
         data = {
             'current_article': current_article_data,
-            'related_article_list': related_article_data
+            'popular_article_list': popular_article_list_data
         }
         return APIResponse(data=data, status=drf_status.HTTP_200_OK)
 

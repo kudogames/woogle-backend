@@ -61,8 +61,7 @@ class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = article_models.Article
         fields = (
-        "uid", "title", "description", 'tags', "category", "content", "cover_img", "rank", "referrer_ad_creative")
-
+            "uid", "title", "description", 'tags', "category", "content", "cover_img", "rank", "referrer_ad_creative")
 
 
 class IndexArticleSerializer(serializers.ModelSerializer):
@@ -79,7 +78,7 @@ class IndexArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = article_models.Article
-        fields = ("uid", "title", "description","update_time", "category", "cover_img", "rank")
+        fields = ("uid", "title", "description", "update_time", "category", "cover_img", "rank")
 
 
 class CategoryArticleSerializer(serializers.ModelSerializer):
@@ -100,8 +99,24 @@ class CategoryArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = article_models.Article
-        fields = ("uid", "title", "description","update_time", "category", "cover_img", "rank",'read_time')
+        fields = ("uid", "title", "description", "update_time", "category", "cover_img", "rank", 'read_time')
 
+
+class ArticleDetailSerializer(serializers.ModelSerializer):
+    cover_img = serializers.SerializerMethodField()
+
+    read_time = serializers.SerializerMethodField()
+
+    def get_read_time(self, obj):
+        return random.randint(3, 8)
+
+    def get_cover_img(self, obj):
+        options = self.context.get('options', ImgProxyOptions.L_COVER_IMG)
+        return imgproxy.get_img_url(obj.cover_img, options=options)
+
+    class Meta:
+        model = article_models.Article
+        fields = ("uid", "title", "description", 'content', "update_time", "cover_img", 'read_time')
 
 
 class ArticleSimpleSerializer(serializers.ModelSerializer):
