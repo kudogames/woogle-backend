@@ -13,27 +13,39 @@ from article import models as article_models
 from article import serializers as article_serializers
 
 
-def get_specify_sequence(uid_list_str):
+def get_paginated_data(queryset, request, serializer_class, data_key='new_data', *args, **kwargs):
     """
-    首页随机文章，从15个中随机取
+    快速分页
     """
-    try:
-        uid_list = article_models.CategoryGroupRank.objects.filter(slug=uid_list_str).first().rank
-    except Exception as e:
-        uid_list = []
 
-    article_list = article_models.Article.objects.filter(uid__in=uid_list).order_by('?')
-    article_list_data = article_serializers.ArticleSimpleSerializer(article_list, many=True).data
+    paginator = APIPageNumberPagination()
+    data_page = paginator.paginate_queryset(queryset, request)
+
+    if data_page is None:
+        return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
+    serializer_class.context = kwargs.get('context', {})
+    serialized_data = serializer_class(data_page, many=True).data
+    return paginator.get_paginated_response(data={data_key: serialized_data})
+
+
+def get_specify_sequence(uid_list_str, serializer_class, *args, **kwargs):
+    """
+    获取指定序列
+    """
+
+    uid_list = article_models.CategoryGroupRank.objects.filter(slug=uid_list_str)
+    if not uid_list.exists():
+        return []
+    uid_list = uid_list.first().rank
+    if not uid_list:
+        return []
+
+    article_list = article_models.Article.objects.filter(uid__in=uid_list).order_by(
+        Case(*[When(uid=uid, then=index) for index, uid in enumerate(uid_list)]))
+    serializer_class.context = kwargs.get('context', {})
+    article_list_data = serializer_class(article_list, many=True).data
+
     return article_list_data
-
-
-class UseAPIPageNumberPagination(APIPageNumberPagination):
-    def get_pagination_data(self, data_list, request, serializer):
-        data_page = self.paginate_queryset(data_list, request)
-        data_list_data = serializer(data_page, many=True).data
-        if data_page is None:
-            return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
-        return data_list_data
 
 
 class IndexPageView(APIView):
@@ -42,24 +54,22 @@ class IndexPageView(APIView):
 
     @cache_response(timeout=settings.CACHE_TIME_INDEX, key_func='cache_key')
     def get(self, request):
-        swiper_article_list = article_models.Article.objects.order_by('?')[:4]
-        swiper_article_list_data = article_serializers.IndexArticleSerializer(swiper_article_list, many=True).data
+        index_article_list = article_models.Article.objects.all().order_by('?')[:26]
+        index_article_list_data = article_serializers.IndexArticleSerializer(index_article_list, many=True).data
 
-        trending_article_list = article_models.Article.objects.order_by('?')[:6]
-        trending_article_list_data = article_serializers.IndexArticleSerializer(trending_article_list, many=True).data
+        swiper_article_list = index_article_list_data[:4]
 
-        latest_article_list = article_models.Article.objects.order_by('?')[:4]
-        latest_article_list_data = article_serializers.IndexArticleSerializer(latest_article_list, many=True).data
+        trending_article_list = index_article_list_data[4:10]
 
-        editors_article_list = article_models.Article.objects.order_by('?')[:6]
-        editors_article_list_data = article_serializers.IndexArticleSerializer(editors_article_list, many=True).data
+        latest_article_list = index_article_list_data[10:14]
+        editors_article_list = index_article_list_data[14:26]
 
         data = {
-            'swiper_article_list': swiper_article_list_data,
-            'trending_article_list': trending_article_list_data,
+            'swiper_article_list': swiper_article_list,
+            'trending_article_list': trending_article_list,
 
-            'latest_article_list': latest_article_list_data,
-            'editors_article_list': editors_article_list_data
+            'latest_article_list': latest_article_list,
+            'editors_article_list': editors_article_list
         }
 
         return APIResponse(data=data, status=drf_status.HTTP_200_OK)
@@ -73,13 +83,14 @@ class ArticlePageView(APIView):
     def get(self, request, uid):
         article_obj = article_models.Article.objects.filter(uid=uid).first()
         if not article_obj:
-            return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
+            return APIResponse(status=drf_status.HTTP_404_NOT_FOUND)
 
         current_article_data = article_serializers.ArticleDetailSerializer(article_obj).data
 
         popular_article_list = article_models.Article.objects.exclude(uid=uid).order_by('?')[:10]
-        popular_article_list_data = article_serializers.ArticleSimpleSerializer(popular_article_list, many=True, context={
-            'options': ImgProxyOptions.S_COVER_IMG}).data
+        popular_article_list_data = article_serializers.ArticleSimpleSerializer(popular_article_list, many=True,
+                                                                                context={
+                                                                                    'options': ImgProxyOptions.S_COVER_IMG}).data
 
         data = {
             'current_article': current_article_data,
@@ -98,52 +109,65 @@ class QPageView(APIView):
 
     @cache_response(timeout=settings.CACHE_TIME_Q, key_func='calculate_cache_key')
     def get(self, request):
-        page = int(request.query_params.get('page', 1))
-        q = request.query_params.get('q', None)
+        q = request.query_params.get('q', '')
 
-        exact_articles = article_models.Article.objects.annotate(
-            order=Case(
-                When(title__icontains=q, then=0),
-                When(description__icontains=q, then=1),
-                default=2,
-                output_field=IntegerField(),
-            )
-        ).order_by('order')
+        exact_articles = article_models.Article.objects.order_by(Case(
+            When(title__icontains=q, then=0),
+            When(description__icontains=q, then=1),
+            default=2,
+            output_field=IntegerField(),
+        ))
 
-        search_articles_pg = APIPageNumberPagination()
-        data_page = search_articles_pg.paginate_queryset(exact_articles, request)
-        if data_page is None:
-            return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
+        res = get_paginated_data(exact_articles, request, article_serializers.ArticleMiddleSerializer,
+                                 'search_article_list', context={
+                'options': ImgProxyOptions.S_COVER_IMG})
 
-        search_article_list_data = article_serializers.ArticleMiddleSerializer(data_page, many=True, context={
-            'options': ImgProxyOptions.S_COVER_IMG}).data
-        if page < 2:
+        sai_id = request.query_params.get('sai_id', None)
+        search_ad_info = article_models.SearchAdInfo.objects.filter(uid=sai_id)
 
-            sai_id = request.query_params.get('sai_id', None)
-            search_ad_info = article_models.SearchAdInfo.objects.filter(uid=sai_id).first()
-
-            if search_ad_info:
-                terms = [term.lower().strip() for term in search_ad_info.terms.split(',')]
-                is_own = q.lower().strip() in terms
-            else:
-                is_own = False
-
-            tagList = [
-                ['Donate', 'Charity', 'Non-Profit', 'Tax Deduction', 'Car Donation', 'Motorcycle', 'Boat', 'Recycle'],
-                ['Blueprint', 'Design', 'Model', 'Schema', 'Prototype', 'Concept', 'Production', 'Innovation'],
-                ['Car', 'Truck', 'Bike', 'Bus', 'SUV', 'Van', 'Motorcycle', 'Automobile'],
-                ['Fix', 'Restore', 'Maintenance', 'Service', 'Mechanics', 'Parts', 'Replace', 'Overhaul']
-            ]
-            tag = [random.sample(tags, min(6, len(tags))) for tags in tagList]
-            data = {
-                'is_own': is_own,
-                'tagList': tag,
-                'search_article_list': search_article_list_data,
-            }
+        if search_ad_info.exists():
+            terms = [term.lower().strip() for term in search_ad_info.first().terms.split(',')]
+            is_own = q.lower().strip() in terms
         else:
-            data = {'new_data_list': search_article_list_data}
+            is_own = False
 
-        return search_articles_pg.get_paginated_response(data)
+        tagList = [
+            ['Donate', 'Charity', 'Non-Profit', 'Tax Deduction', 'Car Donation', 'Motorcycle', 'Boat', 'Recycle'],
+            ['Blueprint', 'Design', 'Model', 'Schema', 'Prototype', 'Concept', 'Production', 'Innovation'],
+            ['Car', 'Truck', 'Bike', 'Bus', 'SUV', 'Van', 'Motorcycle', 'Automobile'],
+            ['Fix', 'Restore', 'Maintenance', 'Service', 'Mechanics', 'Parts', 'Replace', 'Overhaul']
+        ]
+        tag = [random.sample(tags, min(6, len(tags))) for tags in tagList]
+
+        res.data['data']['is_own'] = is_own
+        res.data['data']['tagList'] = tag
+
+        return res
+
+
+class QDataView(APIView):
+    def calculate_cache_key(self, view_instance, view_method, request, args, kwargs):
+        q = request.query_params.get('q', None)
+        page = request.query_params.get('page', 1)
+        size = request.query_params.get('size')
+        return f'backend:article:search:{q}:{page}:{size}'
+
+    @cache_response(timeout=settings.CACHE_TIME_Q, key_func='calculate_cache_key')
+    def get(self, request):
+        q = request.query_params.get('q','')
+
+        exact_articles = article_models.Article.objects.order_by(Case(
+            When(title__icontains=q, then=0),
+            When(description__icontains=q, then=1),
+            default=2,
+            output_field=IntegerField(),
+        ))
+
+        res = get_paginated_data(exact_articles, request, article_serializers.ArticleMiddleSerializer,
+                                 'search_article_list', context={
+                'options': ImgProxyOptions.S_COVER_IMG})
+
+        return res
 
 
 class ContentPageView(APIView):
@@ -157,7 +181,7 @@ class ContentPageView(APIView):
             search_ad_info = article_models.SearchAdInfo.objects.get(uid=uid)
             search_article = article_models.Article.objects.get(slug=slug)
         except Exception as e:
-            return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
+            return APIResponse(status=drf_status.HTTP_404_NOT_FOUND)
 
         search_ad_info_data = article_serializers.SearchAdInfoSerializer(search_ad_info).data
         search_article_data = article_serializers.SearchArticleSerializer(search_article).data
@@ -179,7 +203,7 @@ class DiscussionPageView(APIView):
             search_ad_info = article_models.SearchAdInfo.objects.get(uid=uid)
             search_article = article_models.Article.objects.get(slug=slug)
         except Exception as e:
-            return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
+            return APIResponse(status=drf_status.HTTP_404_NOT_FOUND)
 
         ad_article_map = {'KOTjSsb5': 'junk-cars-a-journey-of-value-and-opportunity',
                           '8D3UYUH6': 'roll-with-confidence-a-journey-through-tire-services',
@@ -334,60 +358,51 @@ class CategoryPageView(APIView):
         # 当前分类
         current_category = article_models.Category.objects.filter(slug=slug).first()
         if not current_category:
-            return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
+            return APIResponse(status=drf_status.HTTP_404_NOT_FOUND)
 
-        top_article_obj = article_models.Article.objects.filter(categories__slug=slug).first()
-        top_article_data = article_serializers.CategoryArticleSerializer(top_article_obj, context={
-            'options': ImgProxyOptions.M_COVER_IMG}).data
+        category_article_list = get_specify_sequence(slug, article_serializers.CategoryArticleSerializer)
 
-        trending_article_list = article_models.Article.objects.filter(categories__slug=slug).order_by('?')[:6]
-        trending_article_list_data = article_serializers.CategoryArticleSerializer(trending_article_list,
-                                                                                   many=True).data
+        top_article_data = category_article_list[0]
 
-        trending_article_uid_list = [article.uid for article in trending_article_list]
+        trending_article_list_data = category_article_list[1:]
 
-        recent_article_list = article_models.Article.objects.exclude(uid=top_article_obj.uid).exclude(
-            uid__in=trending_article_uid_list).filter(categories__slug=slug).order_by('-create_time')
-        recent_article_list_data = article_serializers.CategoryArticleSerializer(recent_article_list, many=True).data
+        uid_list = article_models.CategoryGroupRank.objects.filter(slug=slug).first()
 
-        data = {
-            'top_article': top_article_data,
-            'trending_article_list': trending_article_list_data,
-            'recent_article_list': recent_article_list_data
-        }
+        if not uid_list:
+            uid_list = []
+        else:
+            uid_list = uid_list.rank
 
-        return APIResponse(data=data, status=drf_status.HTTP_200_OK)
+        recent_article_list = article_models.Article.objects.exclude(
+            uid__in=uid_list).filter(categories__slug=slug).order_by('-update_time')
+        res = get_paginated_data(recent_article_list, request, article_serializers.CategoryArticleSerializer,
+                                 'recent_article_list')
+
+        res.data['data']['top_article'] = top_article_data
+        res.data['data']['trending_article_list'] = trending_article_list_data
+
+        return res
 
 
-class GetMoreDataView(APIView):
+class CategoryDataView(APIView):
     def cache_key(self, view_instance, view_method, request, args, kwargs):
         slug = kwargs.get('slug')
         page = request.query_params.get('page', 1)
         size = request.query_params.get('size')
-        return f'backend:article:get_data:{slug}:{page}:{size}'
+        return f'backend:article:API:category:{slug}:{page}:{size}'
 
-    @cache_response(timeout=settings.CACHE_TIME_GETMOREDATA, key_func='cache_key')
+    @cache_response(timeout=settings.CACHE_TIME_API_DATA, key_func='cache_key')
     def get(self, request, slug):
 
-        type = request.query_params.get('type', '')
-        try:
-            uid_list = article_models.CategoryGroupRank.objects.filter(slug=slug).first().rank
-        except Exception as e:
+        uid_list = article_models.CategoryGroupRank.objects.filter(slug=slug).first()
+
+        if not uid_list:
             uid_list = []
-        article_list = article_models.Article.objects.exclude(uid__in=uid_list).order_by(
-            'uid')
-
-        if type == 'category':
-            article_list = article_list.filter(categories__slug=slug)
-
-        data_page = UseAPIPageNumberPagination()
-
-        if type == 'category':
-            article_list_data = data_page.get_pagination_data(article_list, request,
-                                                              article_serializers.ArticleMiddleSerializer)
         else:
-            article_list_data = data_page.get_pagination_data(article_list, request,
-                                                              article_serializers.ArticleSimpleSerializer)
+            uid_list = uid_list.rank
 
-        data = {'new_data_list': article_list_data}
-        return data_page.get_paginated_response(data)
+        recent_article_list = article_models.Article.objects.exclude(
+            uid__in=uid_list).filter(categories__slug=slug).order_by('-update_time')
+        res = get_paginated_data(recent_article_list, request, article_serializers.CategoryArticleSerializer,
+                                 'recent_article_list')
+        return res
