@@ -23,8 +23,8 @@ def get_paginated_data(queryset, request, serializer_class, data_key='new_data',
 
     if data_page is None:
         return APIResponse(status=drf_status.HTTP_400_BAD_REQUEST)
-    serializer_class.context = kwargs.get('context', {})
-    serialized_data = serializer_class(data_page, many=True).data
+    context = kwargs.get('context', {})
+    serialized_data = serializer_class(data_page, many=True,context=context).data
     return paginator.get_paginated_response(data={data_key: serialized_data})
 
 
@@ -42,8 +42,8 @@ def get_specify_sequence(uid_list_str, serializer_class, *args, **kwargs):
 
     article_list = article_models.Article.objects.filter(uid__in=uid_list).order_by(
         Case(*[When(uid=uid, then=index) for index, uid in enumerate(uid_list)]))
-    serializer_class.context = kwargs.get('context', {})
-    article_list_data = serializer_class(article_list, many=True).data
+    context = kwargs.get('context', {})
+    article_list_data = serializer_class(article_list, many=True,context=context).data
 
     return article_list_data
 
